@@ -2,10 +2,9 @@ import os
 import openpyxl
 import re
 import json
-from datetime import datetime
-import google.generativeai as genai
+import anthropic
 
-# ==================== 1. 基本設定（請依據本機環境修改） ====================
+# ==================== 1. 基本設定 ====================
 # Mac 用戶：iCloud 路徑如下
 # Windows 用戶：改成 os.path.expanduser("~/iCloudDrive/Obsidian/西文48週X50句型解析")
 OBSIDIAN_VAULT_PATH = os.path.expanduser(
@@ -19,12 +18,10 @@ os.makedirs(WEEKLY_DIR, exist_ok=True)
 os.makedirs(DICT_DIR, exist_ok=True)
 os.makedirs(GRAMMAR_DIR, exist_ok=True)
 
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
-model = genai.GenerativeModel('gemini-1.5-flash')
+client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 
-# ==================== 2. API 核心提示詞設計 ====================
-SYSTEM_PROMPT = """
-你是一位精通中西雙語的進階西班牙文（B1-B2）教學專家。
+# ==================== 2. API 核心提示詞 ====================
+SYSTEM_PROMPT = """你是一位精通中西雙語的進階西班牙文（B1-B2）教學專家。
 請針對使用者提供的西班牙文長難句進行深度解析。
 
 你必須嚴格輸出 JSON 格式（不要包含任何 markdown 標記如 ```json），結構如下：
@@ -43,19 +40,24 @@ SYSTEM_PROMPT = """
   ]
 }
 
-注意：請保持文字極簡，絕對不可包含任何粗體（**）、斜體（*）或圖示。
-"""
+注意：請保持文字極簡，絕對不可包含任何粗體（**）、斜體（*）或圖示。"""
 
 
 def analyze_sentence(es_sentence, zh_meaning, grammar_tag):
     prompt = f"原句：{es_sentence}\n中文：{zh_meaning}\n預期語法：{grammar_tag}\n\n請依照指定JSON格式解析。"
     try:
-        response = model.generate_content(
-            contents=prompt,
-            generation_config={"response_mime_type": "application/json", "temperature": 0.2},
-            system_instruction=SYSTEM_PROMPT
+        message = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=1024,
+            temperature=0.2,
+            system=SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": prompt}]
         )
-        return json.loads(response.text.strip())
+        text = message.content[0].text.strip()
+        # 移除可能殘留的 markdown 標記
+        text = re.sub(r'^```json\s*', '', text)
+        text = re.sub(r'\s*```$', '', text)
+        return json.loads(text)
     except Exception as e:
         print(f"API 解析失敗: {e}")
         return None
@@ -66,8 +68,7 @@ def process_weekly_excel(file_path, week_id, title_name):
     wb = openpyxl.load_workbook(file_path)
     sheet = wb.active
 
-    weekly_filename = f"{week_id}.md"
-    weekly_file_path = os.path.join(WEEKLY_DIR, weekly_filename)
+    weekly_file_path = os.path.join(WEEKLY_DIR, f"{week_id}.md")
 
     weekly_content = []
     weekly_content.append(f"# {week_id} 西文檢視：{title_name}\n")
@@ -76,8 +77,8 @@ def process_weekly_excel(file_path, week_id, title_name):
     weekly_content.append("樣式規範：極簡文字，無粗斜體，無圖示\n")
     weekly_content.append("## 核心句型與拆解\n")
 
-    # 欄位順序：類型(A), 編號(B), 西文句型(C), 中文意思(D), 核心語法標註(E)
-    # 從第 11 行開始讀取數據，請根據實際 Excel 調整
+    # 欄位：類型(A), 編號(B), 西文句型(C), 中文意思(D), 核心語法標註(E)
+    # 數據從第 12 行開始（第 11 行是欄位標題）
     for row in range(12, sheet.max_row + 1):
         tipo = sheet[f'A{row}'].value
         no = sheet[f'B{row}'].value
@@ -98,8 +99,7 @@ def process_weekly_excel(file_path, week_id, title_name):
             vocab_list = api_result.get("vocab_list", [])
             grammar_list = api_result.get("grammar_list", [])
 
-            ghost_links = [f"[[{v['word']}]]" for v in vocab_list]
-            ghost_links_str = ", ".join(ghost_links)
+            ghost_links_str = ", ".join([f"[[{v['word']}]]" for v in vocab_list])
 
             weekly_content.append(f"類型：{tipo}")
             weekly_content.append(f"編號：{no}")
@@ -142,5 +142,4 @@ def process_weekly_excel(file_path, week_id, title_name):
 
 # ==================== 4. 執行入口 ====================
 if __name__ == "__main__":
-    # 請確保運行目錄下有對應的 .xlsx 檔案
-    process_weekly_excel("WK24範例.xlsx", "M6-WK24", "機場報到")
+    process_weekly_excel("WK24.xlsx", "M24", "社交媒體與隱私")
