@@ -2,7 +2,7 @@ import os
 import openpyxl
 import re
 import json
-import anthropic
+from google import genai as google_genai
 
 # ==================== 1. 基本設定 ====================
 # Mac 用戶：iCloud 路徑如下
@@ -18,7 +18,8 @@ os.makedirs(WEEKLY_DIR, exist_ok=True)
 os.makedirs(DICT_DIR, exist_ok=True)
 os.makedirs(GRAMMAR_DIR, exist_ok=True)
 
-client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+client = google_genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+GEMINI_MODEL = "gemini-2.5-flash-lite"
 
 # ==================== 2. API 核心提示詞 ====================
 SYSTEM_PROMPT = """你是一位精通中西雙語的進階西班牙文（B1-B2）教學專家。
@@ -44,23 +45,28 @@ SYSTEM_PROMPT = """你是一位精通中西雙語的進階西班牙文（B1-B2�
 
 
 def analyze_sentence(es_sentence, zh_meaning, grammar_tag):
+    import time
     prompt = f"原句：{es_sentence}\n中文：{zh_meaning}\n預期語法：{grammar_tag}\n\n請依照指定JSON格式解析。"
-    try:
-        message = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=1024,
-            temperature=0.2,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        text = message.content[0].text.strip()
-        # 移除可能殘留的 markdown 標記
-        text = re.sub(r'^```json\s*', '', text)
-        text = re.sub(r'\s*```$', '', text)
-        return json.loads(text)
-    except Exception as e:
-        print(f"API 解析失敗: {e}")
-        return None
+    for attempt in range(5):
+        try:
+            response = client.models.generate_content(
+                model=GEMINI_MODEL,
+                contents=prompt,
+                config={"response_mime_type": "application/json", "temperature": 0.2,
+                        "system_instruction": SYSTEM_PROMPT}
+            )
+            text = response.text.strip()
+            text = re.sub(r'^```json\s*', '', text)
+            text = re.sub(r'\s*```$', '', text)
+            return json.loads(text)
+        except Exception as e:
+            if '429' in str(e) and attempt < 4:
+                wait = 15 * (attempt + 1)
+                print(f"速率限制，等待 {wait} 秒後重試...")
+                time.sleep(wait)
+            else:
+                print(f"API 解析失敗: {e}")
+                return None
 
 
 # ==================== 3. 處理 Excel 主程式 ====================
