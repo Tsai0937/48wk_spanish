@@ -6,7 +6,11 @@ from datetime import datetime
 import google.generativeai as genai
 
 # ==================== 1. 基本設定（請依據本機環境修改） ====================
-OBSIDIAN_VAULT_PATH = "./Obsidian_Vault"
+# Mac 用戶：iCloud 路徑如下
+# Windows 用戶：改成 os.path.expanduser("~/iCloudDrive/Obsidian/西文48週X50句型解析")
+OBSIDIAN_VAULT_PATH = os.path.expanduser(
+    "~/Library/Mobile Documents/iCloud~md~obsidian/Documents/西文48週X50句型解析"
+)
 WEEKLY_DIR = os.path.join(OBSIDIAN_VAULT_PATH, "Obsidian-Weekly")
 DICT_DIR = os.path.join(OBSIDIAN_VAULT_PATH, "Dictionary")
 GRAMMAR_DIR = os.path.join(OBSIDIAN_VAULT_PATH, "Grammar")
