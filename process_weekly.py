@@ -78,7 +78,7 @@ def process_weekly_excel(file_path, week_id, title_name):
 
     # 欄位順序：類型(A), 編號(B), 西文句型(C), 中文意思(D), 核心語法標註(E)
     # 從第 11 行開始讀取數據，請根據實際 Excel 調整
-    for row in range(11, sheet.max_row + 1):
+    for row in range(12, sheet.max_row + 1):
         tipo = sheet[f'A{row}'].value
         no = sheet[f'B{row}'].value
         es_phrase = sheet[f'C{row}'].value
