@@ -98,15 +98,25 @@ SYSTEM_PROMPT = """你是一位精通中西雙語的進階西班牙文（B1-B2�
 }"""
 
 
-# ==================== 4. API 呼叫 ====================
-def analyze_sentence(es_sentence, zh_meaning, grammar_tag, topic):
+# ==================== 4. API 呼叫（全批次，1次呼叫處理所有句子）====================
+def analyze_all_sentences(sentences, topic):
+    """
+    sentences: list of (es_phrase, zh_meaning, grammar_tag)
+    回傳: list of result dict，順序與輸入相同；失敗的項目為 None
+    """
+    numbered = ""
+    for i, (es, zh, gr) in enumerate(sentences, 1):
+        numbered += f"[{i}]\n原句：{es}\n中文：{zh}\n語法重點：{gr}\n\n"
+
     prompt = (
-        f"原句：{es_sentence}\n"
-        f"中文：{zh_meaning}\n"
-        f"語法重點：{grammar_tag}\n"
         f"本週主題：{topic}\n\n"
-        f"請依照指定 JSON 格式解析。"
+        f"以下共 {len(sentences)} 個句子，請依序解析，"
+        f"回傳一個 JSON 陣列，陣列長度必須恰好為 {len(sentences)}，"
+        f"每個元素的格式與 system prompt 中的單句格式完全相同。\n\n"
+        f"{numbered}"
+        f"請依照指定 JSON 格式解析，直接回傳陣列，不需要其他說明。"
     )
+
     for attempt in range(5):
         try:
             response = client.models.generate_content(
@@ -115,13 +125,17 @@ def analyze_sentence(es_sentence, zh_meaning, grammar_tag, topic):
                 config={
                     "response_mime_type": "application/json",
                     "temperature": 0.2,
-                    "system_instruction": SYSTEM_PROMPT
+                    "system_instruction": SYSTEM_PROMPT,
+                    "max_output_tokens": 65536,
                 }
             )
             text = response.text.strip()
             text = re.sub(r'^```json\s*', '', text)
             text = re.sub(r'\s*```$', '', text)
-            return json.loads(text)
+            results = json.loads(text)
+            if isinstance(results, list) and len(results) == len(sentences):
+                return results
+            print(f"  回傳筆數不符（期望 {len(sentences)}，得到 {len(results) if isinstance(results, list) else '非陣列'}），重試...")
         except Exception as e:
             if '429' in str(e) and attempt < 4:
                 wait = 15 * (attempt + 1)
@@ -129,7 +143,8 @@ def analyze_sentence(es_sentence, zh_meaning, grammar_tag, topic):
                 time.sleep(wait)
             else:
                 print(f"  API 解析失敗: {e}")
-                return None
+                return [None] * len(sentences)
+    return [None] * len(sentences)
 
 
 # ==================== 5. 卡片寫入 ====================
@@ -191,30 +206,35 @@ def process_weekly_excel(file_path, month, week, title_name):
     wb = openpyxl.load_workbook(file_path)
     sheet = wb.active
 
-    index_entries = []
-
+    # 讀取所有句子
+    rows_data = []
     for row in range(12, sheet.max_row + 1):
         tipo        = sheet[f'A{row}'].value
         raw_no      = sheet[f'B{row}'].value
         es_phrase   = sheet[f'C{row}'].value
         zh_meaning  = sheet[f'D{row}'].value
         grammar_tag = sheet[f'E{row}'].value
-
         if not raw_no or not es_phrase:
             continue
-
         seq = raw_no.split('-')[-1]
-        card_id = f"{card_prefix}-{seq}"   # e.g. ES_W24-001
-        print(f"正在處理: {card_id}...")
+        card_id = f"{card_prefix}-{seq}"
+        rows_data.append((tipo, card_id, es_phrase, zh_meaning, grammar_tag))
 
-        result = analyze_sentence(es_phrase, zh_meaning, grammar_tag, title_name)
+    print(f"共讀取 {len(rows_data)} 句，送出 1 次 API 呼叫...")
+
+    # 1次API呼叫處理全部
+    sentences = [(es, zh, gr) for _, _, es, zh, gr in rows_data]
+    results = analyze_all_sentences(sentences, title_name)
+
+    index_entries = []
+    for i, (tipo, card_id, es_phrase, zh_meaning, _) in enumerate(rows_data):
+        result = results[i]
         if not result:
             print(f"  跳過 {card_id}（API 失敗）")
             continue
-
+        print(f"  寫入: {card_id}")
         card_path = os.path.join(week_dir, f"{card_id}.md")
         write_card(card_path, tipo, card_id, result, zh_meaning)
-
         chunked_es = result.get("chunked_es", es_phrase)
         index_entries.append((card_id, tipo, chunked_es, zh_meaning))
 
