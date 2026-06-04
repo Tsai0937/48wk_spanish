@@ -129,8 +129,9 @@ generate_master_index("input/SET_UP.xlsx")
 
 **每週執行：**
 ```python
-# 修改 process_weekly.py 最後幾行：
-process_weekly_excel("input/SET_UP.xlsx", month=7, week=25, title_name="學術討論與大學生活")
+# 修改 process_weekly.py 最後一行，只需換檔名：
+process_weekly_excel("input/WK25.xlsx")
+# 月份、週次、主題名稱全部自動從 SET_UP.xlsx 查詢，不需手動填寫
 ```
 
 ```bash

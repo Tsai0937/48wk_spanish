@@ -174,11 +174,11 @@ def write_card(path, tipo, card_id, result, zh_meaning):
 
 
 # ==================== 6. 主程式 ====================
-def process_weekly_excel(file_path, month, week, title_name):
+def process_weekly_excel(file_path, curriculum_xlsx="input/SET_UP.xlsx"):
     """
-    month:      int，第幾個月，例如 6
-    week:       int，第幾週，例如 24
-    title_name: str，主題名稱，例如 "社交媒體與隱私"
+    file_path: 每週句型 Excel，例如 "input/WK24.xlsx"
+               週次從檔名自動解析（WK24 → week=24）
+               月份與主題從 SET_UP.xlsx 自動查詢
 
     Excel 欄位（數據從第 12 行開始，第 11 行為標題）：
       A: 類型（Q/A/R/D）
@@ -195,6 +195,20 @@ def process_weekly_excel(file_path, month, week, title_name):
           ES_W{WW}-001.md    ← 句型卡
           ...
     """
+    # 從檔名解析週次（WK24.xlsx → 24）
+    basename = os.path.basename(file_path)
+    match = re.search(r'WK(\d+)', basename, re.IGNORECASE)
+    if not match:
+        raise ValueError(f"無法從檔名解析週次：{basename}，請確認格式為 WK24.xlsx")
+    week = int(match.group(1))
+
+    # 從 SET_UP.xlsx 查詢月份與主題
+    curriculum = load_curriculum(curriculum_xlsx)
+    if week not in curriculum:
+        raise ValueError(f"SET_UP.xlsx 中找不到第 {week} 週的資料")
+    month, title_name = curriculum[week]
+    print(f"第 {week} 週：第 {month} 月 / {title_name}")
+
     week_str  = f"W{week:02d}"          # e.g. W24
     month_str = f"M{month:02d}"         # e.g. M06
     card_prefix = f"ES_{week_str}"      # e.g. ES_W24
@@ -254,8 +268,33 @@ def process_weekly_excel(file_path, month, week, title_name):
     print(f"檔案位置：{week_dir}")
 
 
-# ==================== 7. 主 INDEX 產生器 ====================
-def generate_master_index(curriculum_xlsx):
+# ==================== 7. 課程查找表 ====================
+def load_curriculum(curriculum_xlsx="input/SET_UP.xlsx"):
+    """
+    從 SET_UP.xlsx 建立週次查找表。
+    回傳 dict: {week_num: (month_num, topic)}
+    例如: {24: (6, "社交媒體與隱私 (Redes Sociales y Privacidad)"), ...}
+    """
+    wb = openpyxl.load_workbook(curriculum_xlsx)
+    sheet = wb.active
+    lookup = {}
+    current_month = ""
+    for row in range(16, sheet.max_row + 1):
+        a = str(sheet[f'A{row}'].value or "").strip()
+        b = str(sheet[f'B{row}'].value or "").strip()
+        c = str(sheet[f'C{row}'].value or "").strip()
+        if not b:
+            break
+        if a:
+            current_month = a
+        week_num = int(b.replace("Week", "").strip())
+        month_num = int(current_month.replace("第", "").replace("月", "").strip())
+        lookup[week_num] = (month_num, c)
+    return lookup
+
+
+# ==================== 8. 主 INDEX 產生器 ====================
+def generate_master_index(curriculum_xlsx="input/SET_UP.xlsx"):
     """
     從 SET_UP.xlsx 的課程規劃表（第 15 行起）產生 ES_00_總覽.md。
     輸出至 vault/Spanish/ES_00_總覽.md。
@@ -298,10 +337,10 @@ def generate_master_index(curriculum_xlsx):
     print(f"主 INDEX 已產生：{out_path}")
 
 
-# ==================== 8. 執行入口 ====================
+# ==================== 9. 執行入口 ====================
 if __name__ == "__main__":
     # 產生主 INDEX（從 SET_UP.xlsx，只需第一次或課程規劃更新時執行）
-    # generate_master_index("input/SET_UP.xlsx")
+    # generate_master_index()
 
-    # 處理每週句型（month=第幾個月, week=第幾週, title_name=主題名稱）
-    process_weekly_excel("input/WK24.xlsx", month=6, week=24, title_name="社交媒體與隱私")
+    # 處理每週句型：只需指定檔案，月份/主題自動從 SET_UP.xlsx 查詢
+    process_weekly_excel("input/WK24.xlsx")
