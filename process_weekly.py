@@ -172,4 +172,4 @@ def process_weekly_excel(file_path, month, week, title_name):
 # ==================== 4. 執行入口 ====================
 if __name__ == "__main__":
     # month=第幾個月, week=第幾週
-    process_weekly_excel("WK24.xlsx", month=1, week=24, title_name="社交媒體與隱私")
+    process_weekly_excel("WK24.xlsx", month=6, week=24, title_name="社交媒體與隱私")
