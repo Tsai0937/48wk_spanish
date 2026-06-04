@@ -1,6 +1,6 @@
-__pycache__/
-*.pyc
-output/
-output/
+output1/
 output2/
-output*/
+output3/
+output4/
+output5/
+__pycache__/
