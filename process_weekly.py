@@ -13,7 +13,7 @@ OBSIDIAN_VAULT_PATH = os.path.expanduser(
 )
 
 client = google_genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
-GEMINI_MODEL = "gemini-2.5-flash-lite"
+GEMINI_MODEL = "gemini-2.0-flash"
 
 # ==================== 2. ES 斷句準則（系統化） ====================
 # 以下準則決定 chunked_es 的 / 切割位置，AI 必須依序套用：
