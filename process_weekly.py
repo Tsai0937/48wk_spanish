@@ -171,15 +171,27 @@ def process_weekly_excel(file_path, month, week, title_name):
       C: 西班牙文句子
       D: 中文意思
       E: 核心語法重點
+
+    輸出路徑結構（Obsidian vault）：
+      vault/Spanish/
+        ES_00_總覽.md         ← 主 INDEX（由 generate_master_index 產生）
+        M{MM}/
+          ES_W{WW}_index.md  ← 週 INDEX（清單格式）
+          ES_W{WW}-001.md    ← 句型卡
+          ...
     """
-    week_label = f"M{month}-W{week}"   # e.g. M6-W24
-    vault = OBSIDIAN_VAULT_PATH
-    os.makedirs(vault, exist_ok=True)
+    week_str  = f"W{week:02d}"          # e.g. W24
+    month_str = f"M{month:02d}"         # e.g. M06
+    card_prefix = f"ES_{week_str}"      # e.g. ES_W24
+
+    vault_spanish = os.path.join(OBSIDIAN_VAULT_PATH, "Spanish")
+    week_dir = os.path.join(vault_spanish, month_str)
+    os.makedirs(week_dir, exist_ok=True)
 
     wb = openpyxl.load_workbook(file_path)
     sheet = wb.active
 
-    index_rows = []
+    index_entries = []
 
     for row in range(12, sheet.max_row + 1):
         tipo        = sheet[f'A{row}'].value
@@ -191,9 +203,8 @@ def process_weekly_excel(file_path, month, week, title_name):
         if not raw_no or not es_phrase:
             continue
 
-        # 編號轉換：M24-001 → M6-W24-001
         seq = raw_no.split('-')[-1]
-        card_id = f"{week_label}-{seq}"
+        card_id = f"{card_prefix}-{seq}"   # e.g. ES_W24-001
         print(f"正在處理: {card_id}...")
 
         result = analyze_sentence(es_phrase, zh_meaning, grammar_tag, title_name)
@@ -201,28 +212,76 @@ def process_weekly_excel(file_path, month, week, title_name):
             print(f"  跳過 {card_id}（API 失敗）")
             continue
 
-        # 寫入卡片
-        card_path = os.path.join(vault, f"{card_id}.md")
+        card_path = os.path.join(week_dir, f"{card_id}.md")
         write_card(card_path, tipo, card_id, result, zh_meaning)
 
-        # INDEX 資料：ZH 前 30 字
-        zh_short = zh_meaning[:30] + "..." if len(zh_meaning) > 30 else zh_meaning
-        index_rows.append(f"| [[{card_id}]] | {tipo} | {zh_short} |")
+        chunked_es = result.get("chunked_es", es_phrase)
+        index_entries.append((card_id, tipo, chunked_es, zh_meaning))
 
-    # 寫入 INDEX
-    index_path = os.path.join(vault, f"{week_label}_index.md")
+    # 週 INDEX（清單格式）
+    index_path = os.path.join(week_dir, f"{card_prefix}_index.md")
     with open(index_path, "w", encoding="utf-8") as f:
-        f.write(f"# {week_label} 索引：{title_name}\n\n")
-        f.write("| 編號 | 類型 | 中文句意 |\n")
-        f.write("|---|---|---|\n")
-        for r in index_rows:
-            f.write(r + "\n")
+        f.write(f"# {card_prefix}：{title_name}\n\n")
+        f.write(f"[[ES_00_總覽]]\n\n")
+        f.write("---\n\n")
+        for card_id, tipo, chunked_es, zh_meaning in index_entries:
+            f.write(f"[[{card_id}]]  {tipo}\n")
+            f.write(f"ES：{chunked_es}\n")
+            f.write(f"ZH：{zh_meaning}\n\n")
+            f.write("---\n\n")
 
-    print(f"\n完成！共 {len(index_rows)} 張卡片。")
-    print(f"檔案位置：{vault}")
+    print(f"\n完成！共 {len(index_entries)} 張卡片。")
+    print(f"檔案位置：{week_dir}")
 
 
-# ==================== 7. 執行入口 ====================
+# ==================== 7. 主 INDEX 產生器 ====================
+def generate_master_index(curriculum_xlsx):
+    """
+    從 WK25.xlsx 的課程規劃表（第 15 行起）產生 ES_00_總覽.md。
+    輸出至 vault/Spanish/ES_00_總覽.md。
+    """
+    wb = openpyxl.load_workbook(curriculum_xlsx)
+    sheet = wb.active
+
+    # 讀取課程表（月份/週次/主題，從第 16 行到第 63 行）
+    curriculum = []
+    current_month = ""
+    for row in range(16, sheet.max_row + 1):
+        a = str(sheet[f'A{row}'].value or "").strip()
+        b = str(sheet[f'B{row}'].value or "").strip()
+        c = str(sheet[f'C{row}'].value or "").strip()
+        if not b:
+            break
+        if a:
+            current_month = a
+        # 取週次數字
+        week_num = int(b.replace("Week", "").strip())
+        # 取月份數字
+        month_num = int(current_month.replace("第", "").replace("月", "").strip())
+        curriculum.append((month_num, week_num, c))
+
+    vault_spanish = os.path.join(OBSIDIAN_VAULT_PATH, "Spanish")
+    os.makedirs(vault_spanish, exist_ok=True)
+    out_path = os.path.join(vault_spanish, "ES_00_總覽.md")
+
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write("# 48週西班牙文學習總覽\n\n")
+        current_month = 0
+        for month_num, week_num, topic in curriculum:
+            if month_num != current_month:
+                current_month = month_num
+                f.write(f"## 第 {month_num} 月\n\n")
+            week_str = f"W{week_num:02d}"
+            f.write(f"- [[ES_{week_str}_index|{week_str}：{topic}]]\n")
+        f.write("\n")
+
+    print(f"主 INDEX 已產生：{out_path}")
+
+
+# ==================== 8. 執行入口 ====================
 if __name__ == "__main__":
-    # month=第幾個月, week=第幾週, title_name=主題名稱
-    process_weekly_excel("WK24.xlsx", month=6, week=24, title_name="社交媒體與隱私")
+    # 產生主 INDEX（從 WK25.xlsx 課程規劃表）
+    # generate_master_index("input/WK25.xlsx")
+
+    # 處理每週句型（month=第幾個月, week=第幾週, title_name=主題名稱）
+    process_weekly_excel("input/WK24.xlsx", month=6, week=24, title_name="社交媒體與隱私")
