@@ -237,7 +237,7 @@ def process_weekly_excel(file_path, month, week, title_name):
 # ==================== 7. 主 INDEX 產生器 ====================
 def generate_master_index(curriculum_xlsx):
     """
-    從 WK25.xlsx 的課程規劃表（第 15 行起）產生 ES_00_總覽.md。
+    從 SET_UP.xlsx 的課程規劃表（第 15 行起）產生 ES_00_總覽.md。
     輸出至 vault/Spanish/ES_00_總覽.md。
     """
     wb = openpyxl.load_workbook(curriculum_xlsx)
@@ -280,8 +280,8 @@ def generate_master_index(curriculum_xlsx):
 
 # ==================== 8. 執行入口 ====================
 if __name__ == "__main__":
-    # 產生主 INDEX（從 WK25.xlsx 課程規劃表）
-    # generate_master_index("input/WK25.xlsx")
+    # 產生主 INDEX（從 SET_UP.xlsx，只需第一次或課程規劃更新時執行）
+    # generate_master_index("input/SET_UP.xlsx")
 
     # 處理每週句型（month=第幾個月, week=第幾週, title_name=主題名稱）
     process_weekly_excel("input/WK24.xlsx", month=6, week=24, title_name="社交媒體與隱私")

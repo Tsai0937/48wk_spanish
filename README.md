@@ -12,10 +12,10 @@
 ├── requirements.txt        ← Python 套件需求
 ├── input/                  ← 每週上傳的 Excel 原始檔
 │   ├── WK24.xlsx           ← 每週句型資料（50句）
-│   └── WK25.xlsx           ← 48週課程規劃總表（用於產生主INDEX）
+│   └── SET_UP.xlsx           ← 48週課程規劃總表（用於產生主INDEX）
 └── vault/                  ← 產出的 Obsidian 筆記
     └── Spanish/
-        ├── ES_00_總覽.md   ← 48週主INDEX（從WK25.xlsx產生，只需一次）
+        ├── ES_00_總覽.md   ← 48週主INDEX（從SET_UP.xlsx產生，只需一次）
         └── M06/            ← 每月一個資料夾（M01~M12）
             ├── ES_W24_index.md   ← 週INDEX（清單格式）
             ├── ES_W24-001.md     ← 句型卡片
@@ -124,13 +124,13 @@ ZH：主管為什麼還「堅持要」修改隱私政策？
 **產生主INDEX（只需第一次，或課程規劃有更新時）：**
 ```python
 # 取消 process_weekly.py 最後的註解：
-generate_master_index("input/WK25.xlsx")
+generate_master_index("input/SET_UP.xlsx")
 ```
 
 **每週執行：**
 ```python
 # 修改 process_weekly.py 最後幾行：
-process_weekly_excel("input/WK25.xlsx", month=7, week=25, title_name="學術討論與大學生活")
+process_weekly_excel("input/SET_UP.xlsx", month=7, week=25, title_name="學術討論與大學生活")
 ```
 
 ```bash
