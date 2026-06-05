@@ -234,11 +234,18 @@ def process_weekly_excel(file_path, curriculum_xlsx="input/SET_UP.xlsx"):
         card_id = f"{card_prefix}-{seq}"
         rows_data.append((tipo, card_id, es_phrase, zh_meaning, grammar_tag))
 
-    print(f"共讀取 {len(rows_data)} 句，送出 1 次 API 呼叫...")
+    # 分批處理（每批 25 句，避免輸出超過 token 上限）
+    BATCH_SIZE = 25
+    total_batches = (len(rows_data) + BATCH_SIZE - 1) // BATCH_SIZE
+    print(f"共讀取 {len(rows_data)} 句，分 {total_batches} 批送出...")
 
-    # 1次API呼叫處理全部
-    sentences = [(es, zh, gr) for _, _, es, zh, gr in rows_data]
-    results = analyze_all_sentences(sentences, title_name)
+    results = []
+    for b in range(total_batches):
+        batch = rows_data[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
+        sentences = [(es, zh, gr) for _, _, es, zh, gr in batch]
+        print(f"  第 {b+1}/{total_batches} 批（{len(sentences)} 句）...")
+        batch_results = analyze_all_sentences(sentences, title_name)
+        results.extend(batch_results)
 
     index_entries = []
     for i, (tipo, card_id, es_phrase, zh_meaning, _) in enumerate(rows_data):
