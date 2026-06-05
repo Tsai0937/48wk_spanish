@@ -235,26 +235,38 @@ def process_weekly_excel(file_path, curriculum_xlsx="input/SET_UP.xlsx"):
         rows_data.append((tipo, card_id, es_phrase, zh_meaning, grammar_tag))
 
     # 分批處理（每批 25 句，避免輸出超過 token 上限）
+    # start_batch: 從第幾批開始（0-based），用於補跑失敗批次
     BATCH_SIZE = 25
     total_batches = (len(rows_data) + BATCH_SIZE - 1) // BATCH_SIZE
     print(f"共讀取 {len(rows_data)} 句，分 {total_batches} 批送出...")
 
-    results = []
+    results = [None] * len(rows_data)
     for b in range(total_batches):
         batch = rows_data[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
         sentences = [(es, zh, gr) for _, _, es, zh, gr in batch]
         print(f"  第 {b+1}/{total_batches} 批（{len(sentences)} 句）...")
         batch_results = analyze_all_sentences(sentences, title_name)
-        results.extend(batch_results)
+        for i, r in enumerate(batch_results):
+            results[b * BATCH_SIZE + i] = r
 
     index_entries = []
     for i, (tipo, card_id, es_phrase, zh_meaning, _) in enumerate(rows_data):
+        card_path = os.path.join(week_dir, f"{card_id}.md")
         result = results[i]
         if not result:
-            print(f"  跳過 {card_id}（API 失敗）")
+            # 若卡片已存在（上次成功），讀取 chunked_es 加入 index
+            if os.path.exists(card_path):
+                with open(card_path, encoding="utf-8") as f:
+                    first_es = ""
+                    for line in f:
+                        if line.startswith("ES："):
+                            first_es = line[3:].strip()
+                            break
+                index_entries.append((card_id, tipo, first_es, zh_meaning))
+            else:
+                print(f"  跳過 {card_id}（API 失敗）")
             continue
         print(f"  寫入: {card_id}")
-        card_path = os.path.join(week_dir, f"{card_id}.md")
         write_card(card_path, tipo, card_id, result, zh_meaning)
         chunked_es = result.get("chunked_es", es_phrase)
         index_entries.append((card_id, tipo, chunked_es, zh_meaning))
