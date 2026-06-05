@@ -156,7 +156,7 @@ def write_card(path, tipo, card_id, result, zh_meaning, week_index_id):
     examples    = result.get("examples", [])
     vocab_list  = result.get("vocab_list", [])
 
-    ghost_links = " ".join([f"[[{v['word']}]]" for v in vocab_list])
+    ghost_links = ", ".join([f"[[{v['word']}]]" for v in vocab_list])
 
     with open(path, "w", encoding="utf-8") as f:
         f.write(f"[[{week_index_id}]]\n\n")   # 雙向連結回週INDEX
