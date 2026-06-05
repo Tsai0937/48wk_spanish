@@ -23,7 +23,7 @@ ZH：我擔心航空公司不允許攜帶這麼多手提行李，除非我們已
 ---
 
 [[ES_W01-004]]  D
-ES：Es imprescindible / que se mantenga atento / a la pantalla de información / antes de que embarquemos, / para que no perdamos el cambio de puerta de última hora.
+ES：Es imprescindible / que se mantenga atento a la pantalla de información / antes de que embarquemos, / para que no perdamos el cambio de puerta de última hora.
 ZH：在我們登機之前，您必須持續留意資訊螢幕，以免我們錯過最後一刻的登機門變動。
 
 ---
@@ -47,7 +47,7 @@ ZH：我不認為航班會很快再次起飛，除非他們在截止時間之前
 ---
 
 [[ES_W01-008]]  D
-ES：Es importante / que nos aseguremos / de que el niño tenga su asiento reservado, / para que no surjan problemas / cuando nos llamen / para abordar.
+ES：Es importante / que nos aseguremos / de que el niño tenga su asiento reservado, / para que no surjan problemas / cuando nos llamen para abordar.
 ZH：我們必須確保孩子有預訂座位，以免在叫我們登機時出現問題。
 
 ---
@@ -83,13 +83,13 @@ ZH：我建議你不要離開座位，直到飛機完全停穩，以免發生任
 ---
 
 [[ES_W01-014]]  R
-ES：Me parece increíble / que tengan la audacia / de cobrarnos por la comida, / a pesar de que el billete anuncia / que será un servicio totalmente incluido.
+ES：Me parece increíble / que tengan la audacia de cobrarnos por la comida, / a pesar de que el billete anuncia / que será un servicio totalmente incluido.
 ZH：我覺得他們竟然敢向我們收取食物費用，真是令人難以置信，儘管機票上宣傳這將是完全包含的服務。
 
 ---
 
 [[ES_W01-015]]  D
-ES：Será conveniente / que les pidamos unos auriculares / a las azafatas / antes de que empiece la película, / no sea que se agoten rápido.
+ES：Será conveniente / que les pidamos unos auriculares a las azafatas / antes de que empiece la película, / no sea que se agoten rápido.
 ZH：我們最好在電影開始前向空服員要一副耳機，以免它們很快就被發完。
 
 ---
@@ -101,13 +101,13 @@ ZH：您能否確認機長在起飛時間之前已經為飛機加油，以便不
 ---
 
 [[ES_W01-017]]  A
-ES：Asegúrese / de que la etiqueta de la maleta esté bien pegada, / para que no se pierda / cuando la carguen / en la bodega del avión.
+ES：Asegúrese / de que la etiqueta de la maleta esté bien pegada, / para que no se pierda / cuando la carguen en la bodega del avión.
 ZH：請您確保行李標籤貼好，以免在他們將其裝載到飛機貨艙時丟失。
 
 ---
 
 [[ES_W01-018]]  D
-ES：No creo / que podamos conseguir un asiento / junto a la ventana, / a menos que el sistema haya fallado / y nos hayan asignado otro por error.
+ES：No creo / que podamos conseguir un asiento junto a la ventana, / a menos que el sistema haya fallado / y nos hayan asignado otro por error.
 ZH：我不認為我們能得到一個靠窗的座位，除非系統出現故障，並且錯誤地給我們分配了另一個。
 
 ---
@@ -143,7 +143,7 @@ ZH：請你等到飛機降落在目的地之後，再起身打開上方的行李
 ---
 
 [[ES_W01-024]]  R
-ES：Es injusto / que nos hicieran pasar / por el control de seguridad de nuevo, / sin que hubiera razón aparente / para que lo hicieran.
+ES：Es injusto / que nos hicieran pasar por el control de seguridad de nuevo, / sin que hubiera razón aparente / para que lo hicieran.
 ZH：他們竟然讓我們再次通過安全檢查，這是不公平的，而且他們這樣做並沒有明顯的理由。
 
 ---
