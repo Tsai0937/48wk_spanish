@@ -149,7 +149,7 @@ def analyze_all_sentences(sentences, topic):
 
 
 # ==================== 5. 卡片寫入 ====================
-def write_card(path, tipo, card_id, result, zh_meaning):
+def write_card(path, tipo, card_id, result, zh_meaning, week_index_id):
     chunked_es  = result.get("chunked_es", "")
     analysis    = result.get("analysis", [])
     grammar     = result.get("grammar", [])
@@ -159,6 +159,7 @@ def write_card(path, tipo, card_id, result, zh_meaning):
     ghost_links = " ".join([f"[[{v['word']}]]" for v in vocab_list])
 
     with open(path, "w", encoding="utf-8") as f:
+        f.write(f"[[{week_index_id}]]\n\n")   # 雙向連結回週INDEX
         f.write(f"{tipo} | {card_id}\n\n")
         f.write(f"ES：{chunked_es}\n")
         f.write(f"ZH：{zh_meaning}\n\n")
@@ -190,7 +191,7 @@ def process_weekly_excel(file_path, curriculum_xlsx="input/SET_UP.xlsx"):
 
     輸出路徑結構（Obsidian vault）：
       vault/Spanish/
-        ES_00_總覽.md         ← 主 INDEX（由 generate_master_index 產生）
+        ES_00_index.md         ← 主 INDEX（由 generate_master_index 產生）
         M{MM}/
           ES_W{WW}_index.md  ← 週 INDEX（清單格式）
           ES_W{WW}-001.md    ← 句型卡
@@ -232,7 +233,7 @@ def process_weekly_excel(file_path, curriculum_xlsx="input/SET_UP.xlsx"):
         if not raw_no or not es_phrase:
             continue
         seq = raw_no.split('-')[-1]
-        card_id = f"{card_prefix}-{seq}"
+        card_id = f"{card_prefix}_{seq}"   # e.g. ES_W01_001
         rows_data.append((tipo, card_id, es_phrase, zh_meaning, grammar_tag))
 
     # 分批處理（每批 25 句，避免輸出超過 token 上限）
@@ -268,21 +269,20 @@ def process_weekly_excel(file_path, curriculum_xlsx="input/SET_UP.xlsx"):
                 print(f"  跳過 {card_id}（API 失敗）")
             continue
         print(f"  寫入: {card_id}")
-        write_card(card_path, tipo, card_id, result, zh_meaning)
+        week_index_id = f"{card_prefix}_index"
+        write_card(card_path, tipo, card_id, result, zh_meaning, week_index_id)
         chunked_es = result.get("chunked_es", es_phrase)
         index_entries.append((card_id, tipo, chunked_es, zh_meaning))
 
-    # 週 INDEX（清單格式）
+    # 週 INDEX
     index_path = os.path.join(week_dir, f"{card_prefix}_index.md")
     with open(index_path, "w", encoding="utf-8") as f:
+        f.write(f"[[ES_00_index]]\n\n")   # 雙向連結回主INDEX
         f.write(f"# {card_prefix}：{title_name}\n\n")
-        f.write(f"[[ES_00_總覽]]\n\n")
-        f.write("---\n\n")
         for card_id, tipo, chunked_es, zh_meaning in index_entries:
-            f.write(f"[[{card_id}]]  {tipo}\n")
+            f.write(f"[[{card_id}]] | {tipo}\n")
             f.write(f"ES：{chunked_es}\n")
             f.write(f"ZH：{zh_meaning}\n\n")
-            f.write("---\n\n")
 
     print(f"\n完成！共 {len(index_entries)} 張卡片。")
     print(f"檔案位置：{week_dir}")
@@ -316,8 +316,8 @@ def load_curriculum(curriculum_xlsx="input/SET_UP.xlsx"):
 # ==================== 8. 主 INDEX 產生器 ====================
 def generate_master_index(curriculum_xlsx="input/SET_UP.xlsx"):
     """
-    從 SET_UP.xlsx 的課程規劃表（第 15 行起）產生 ES_00_總覽.md。
-    輸出至 vault/Spanish/ES_00_總覽.md。
+    從 SET_UP.xlsx 的課程規劃表（第 15 行起）產生 ES_00_index.md。
+    輸出至 vault/Spanish/ES_00_index.md。
     """
     wb = openpyxl.load_workbook(curriculum_xlsx)
     sheet = wb.active
@@ -341,7 +341,7 @@ def generate_master_index(curriculum_xlsx="input/SET_UP.xlsx"):
 
     vault_spanish = os.path.join(OBSIDIAN_VAULT_PATH, "Spanish")
     os.makedirs(vault_spanish, exist_ok=True)
-    out_path = os.path.join(vault_spanish, "ES_00_總覽.md")
+    out_path = os.path.join(vault_spanish, "ES_00_index.md")  # 主INDEX檔名
 
     with open(out_path, "w", encoding="utf-8") as f:
         f.write("# 48週西班牙文學習總覽\n\n")
@@ -351,7 +351,7 @@ def generate_master_index(curriculum_xlsx="input/SET_UP.xlsx"):
                 current_month = month_num
                 f.write(f"## 第 {month_num} 月\n\n")
             week_str = f"W{week_num:02d}"
-            f.write(f"- [[ES_{week_str}_index|{week_str}：{topic}]]\n")
+            f.write(f"[[ES_{week_str}_index]] {topic}\n")
         f.write("\n")
 
     print(f"主 INDEX 已產生：{out_path}")
