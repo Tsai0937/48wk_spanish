@@ -137,9 +137,10 @@ def analyze_all_sentences(sentences, topic):
                 return results
             print(f"  回傳筆數不符（期望 {len(sentences)}，得到 {len(results) if isinstance(results, list) else '非陣列'}），重試...")
         except Exception as e:
-            if '429' in str(e) and attempt < 4:
+            err = str(e)
+            if attempt < 4 and ('429' in err or '503' in err):
                 wait = 15 * (attempt + 1)
-                print(f"  速率限制，等待 {wait} 秒後重試...")
+                print(f"  暫時失敗（{429 if '429' in err else 503}），等待 {wait} 秒後重試...")
                 time.sleep(wait)
             else:
                 print(f"  API 解析失敗: {e}")
